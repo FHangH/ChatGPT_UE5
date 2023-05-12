@@ -99,21 +99,22 @@
 
 ### 2. 控制采样点节点
 
-| 控制采样点节点           | 功能效果描述                                                 |
-| ------------------------ | ------------------------------------------------------------ |
-| Transform Points         | 控制植物的旋转,大小,缩放和法线处置于水平的随机性             |
-| ProjectPointsOnLandscape | 将随机设置位置的树木拉回地面(可用可不用的节点，也可用于增加更多随机性，其后可继续搭配TransformPoints) |
-| Density Filter           | 控制中间到周边的从密到稀的过滤器,过滤编辑时只显示存在的采样点 |
-| DensityNoise             | 调整密度随机性                                               |
-| DensityRemap             | 控制样条线框由内向外的显示过度                               |
-| BoundsModifier           | 类似AE中的蒙板,让区域样条线给道路样条线让路(也可规整二次采样点的大小设置) |
-| Difference               | 让区域给道路让路之间要做识别差异化对比,把区域和样条线连接起来对比的节点 |
-| Distance                 | 让不规则样条框内设置好的内向外的过度距离统一(显示黑白通道方便Density Filter过滤黑还是白采样点) |
-| Copy Points              | 可以用于二次生成的采样点绑定到主采得到的点上                 |
-| ScaleByDensity           | 按密度的大小,自动缩放模型大小                                |
-| Self Pruning             | 修剪采样点情况，将重合的部分精简 (该功能视情况而定可有可无） |
-| NormalToDensity          | 控制采样点显示的方向是上下左右哪边                           |
-| Projection               | 投影                                                         |
+| 控制采样点节点              | 功能效果描述                                                 |
+| --------------------------- | ------------------------------------------------------------ |
+| Transform Points            | 控制植物的旋转,大小,缩放和法线处置于水平的随机性             |
+| ProjectPointsOnLandscape    | 将随机设置位置的树木拉回地面(可用可不用的节点，也可用于增加更多随机性，其后可继续搭配TransformPoints) |
+| Density Filter              | 控制中间到周边的从密到稀的过滤器,过滤编辑时只显示存在的采样点 |
+| DensityNoise                | 调整密度随机性                                               |
+| DensityRemap                | 控制样条线框由内向外的显示过度                               |
+| BoundsModifier              | 类似AE中的蒙板,让区域样条线给道路样条线让路(也可规整二次采样点的大小设置) |
+| Difference                  | 让区域给道路让路之间要做识别差异化对比,把区域和样条线连接起来对比的节点 |
+| Distance                    | 让不规则样条框内设置好的内向外的过度距离统一(显示黑白通道方便Density Filter过滤黑还是白采样点) |
+| Copy Points                 | 可以用于二次生成的采样点绑定到主采得到的点上                 |
+| ScaleByDensity              | 按密度的大小,自动缩放模型大小                                |
+| Self Pruning                | 修剪采样点情况，将重合的部分精简 (该功能视情况而定可有可无） |
+| NormalToDensity             | 控制采样点显示的方向是上下左右哪边                           |
+| Projection                  | 投影                                                         |
+| IntersectWithTaggedActorGeo | 与标记的 Actor 相交，通过场景中的Actor和采样面相交           |
 
 
 
@@ -201,6 +202,13 @@
 
 - 最终结果还受到Invert Filter影响
 
+- 补充：
+
+  - 也可以先用 Normal To Density 进行方向过滤，例如不希望草长在几乎垂直的岩壁上
+  
+  - 直接默认的 Normal To Density 就是Z轴方向，使用Density Filter就可实现效果
+  
+  
   
 
 ##### 2.3.1 Lower Bound
@@ -235,6 +243,10 @@
 #### 2.6 Bounds Modifier
 
 - 边界修饰符
+- 默认值Mode：Scale，BoundsMin / Max （1，1，1） 
+- 默认情况下，比如石头的分布，例如Surface Sample的Point Extents的值可以设置石头的边界间距
+- 但遇到其他情况，例如草使用differences包围石头分布，草会被石头的Point Extents排在边界外
+- 需要Bounds Modifier重新修改石头的边界，该边界仅影响草的分布，不影响原有的边界效果
 
 
 
@@ -276,6 +288,12 @@
 - 密度函数，默认是Minimum
 - 一般实现草丛围绕石头，但不穿模石头，可以切换为Binary
 - 草（主动）连Source，石头（被动）连Differences，Out连草的StaticMeshSpawner
+- 假设草铺满，连Source，但是有石头的地方不长，石头连Differences，即铺满的草地减去石头的地方，就是草实际会长的地方
+- 补充：
+  - 如果发现草虽然只长在石头外边，但间隔很大，甚至没有草，可能的原因是石头的类似Surface Sample节点的Point Extents值较大
+  - 可以减小Point Extents值，但这会破会石头原本设好的分布逻辑，所以可以在石头的Transform Points节点后使用BoundsModifier节点
+  - 不破坏石头原有设定，进行边界值修改
+
 - （其他不明）
 
 
@@ -286,6 +304,20 @@
 - Target是Source的采样数据用于Target
 - Out数据用于给Source的数据进行生成
 - （参数不明）默认够用
+
+
+
+#### 2.10 Normal To Density
+
+- 法向密度
+
+
+
+##### 2.10.1 Normal
+
+- 法向
+- 默认值（0，0，1.0）
+- 在Z轴上进行过滤
 
 
 
@@ -312,6 +344,21 @@
 
 - 法线方向：默认（0，0，1），垂直地面向上的方向，适用于石头，木头上面长草和蘑菇之类
 - （其他不明）默认够用
+
+
+
+#### 2.14 IntersectWithTaggedActorGeo
+
+- 与标记的 Actor 相交
+
+
+
+##### 2.14.1 Actor Tags
+
+- 假设场景中获取某个Actor例如Cube的采样面，使得Cude所在地不生成草
+- 为Actor添加Tag，在IntersectWithTaggedActorGeo节点中添加tag
+- 节点前面需获取采样，例如Surface Sample节点
+- 一般搭配Differences节点即可实现效果
 
 
 
